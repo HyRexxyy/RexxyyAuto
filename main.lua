@@ -192,7 +192,7 @@ MainTab:CreateToggle({
 
 MainTab:CreateToggle({
     Name = "✨ Use Perfect Cast",
-    CurrentValue = true,
+    CurrentValue = false,
     Callback = function(val)
         perfectCast = val
     end
