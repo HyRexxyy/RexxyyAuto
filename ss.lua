@@ -16,11 +16,11 @@ local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/Siri
 local Window = Rayfield:CreateWindow({
     Name = "Fish It Script",
     LoadingTitle = "Fish It ",
-    LoadingSubtitle = "by AldyToi",
+    LoadingSubtitle = "by HyRexxyy",
     Theme = "Default",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "AldyToi",
+        FolderName = "HyRexxyy",
         FileName = "FishIt"
     },
     KeySystem = false
