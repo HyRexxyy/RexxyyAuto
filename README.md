@@ -1,2 +1,2 @@
-# RexxyyAuto
+# Rexxyy`s auto script
 nothing much to see here...
