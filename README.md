@@ -1,2 +1,2 @@
 # RexxyyAuto
-Fish it auto farm
+nothing much to see here...
