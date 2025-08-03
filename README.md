@@ -1,2 +1,2 @@
 # RexxyyAuto
-Fish i auto farm
+Fish it auto farm
