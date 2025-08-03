@@ -305,7 +305,7 @@ for _, bait in ipairs(baits) do
 end
 
 local AutoSellToggle = MainTab:CreateToggle({
-    Name = "🛒 Auto Sell (Teleport ke Alex)",
+    Name = "🛒 Auto Sell (Teleport to Alex)",
     CurrentValue = false,
     Flag = "AutoSell",
     Callback = function(value)
