@@ -1,4 +1,3 @@
--- Unified script with auto fishing logic, teleport, inventory, and enhancements
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
