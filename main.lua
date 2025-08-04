@@ -75,7 +75,7 @@ end
 
 -- Developer Info
 DevTab:CreateParagraph({
-    Title = "HyRexxyy Lua",
+    Title = "HyRexxyy Script",
     Content = "Thanks for using this script!\n\nDont forget to follow my socials\nDeveloper:\n- Tiktok: tiktok.com/hyrexxyy\n- Instagram: @hyrexxyy\n- GitHub: github.com/hyrexxyy\n\nKeep supporting me!"
 })
 
