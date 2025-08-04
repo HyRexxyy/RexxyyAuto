@@ -1,4 +1,3 @@
--- Unified script with auto fishing logic, teleport, inventory, and enhancements
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,7 +8,7 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 
---- Aldytoi add new feature and variable
+--- HyRexxyy add new feature and variable
 local Players = game:GetService("Players")
 local replicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
@@ -22,11 +21,11 @@ local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/Siri
 local Window = Rayfield:CreateWindow({
     Name = "Fish It Script",
     LoadingTitle = "Fish It",
-    LoadingSubtitle = "by @AldyToi",
+    LoadingSubtitle = "by @HyRexxyy",
     Theme = "Amethyst",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "Kontol",
+        FolderName = "Rexxyy",
         FileName = "FishIt"
     },
     KeySystem = false
@@ -59,7 +58,7 @@ local AutoSell = false
 local autofish = false
 local perfectCast = false
 local ijump = false
-local autoRecastDelay = 1.6
+local autoRecastDelay = 0.5
 local enchantPos = Vector3.new(3231, -1303, 1402)
 
 local featureState = {
@@ -76,13 +75,13 @@ end
 
 -- Developer Info
 DevTab:CreateParagraph({
-    Title = "AldyToi Lua",
-    Content = "Thanks For Using This Script!\n\nJangan Lupa Follow Ya Kont\nDeveloper:\n- Tiktok: tiktok.com/aldytoi\n- Instagram: @aldytoi\n- GitHub: github.com/aldyjrz\n\nKeep supporting us!"
+    Title = "HyRexxyy Script",
+    Content = "Thanks for using this script!\n\nDont forget to follow me on my social platform\nDeveloper:\n- Tiktok: tiktok.com/hyrexxyy\n- Instagram: @hyrexxyy\n- GitHub: github.com/hyrexxyy\n\nKeep supporting!"
 })
 
-DevTab:CreateButton({ Name = "Tutor Tiktok", Callback = function() setclipboard("https://tiktok.com/aldytoi") NotifySuccess("Link Tiktok", "Copied to clipboard!") end })
-DevTab:CreateButton({ Name = "Instagram", Callback = function() setclipboard("https://instagram.com/aldytoi") NotifySuccess("Link Instagram", "Copied to clipboard!") end })
-DevTab:CreateButton({ Name = "GitHub", Callback = function() setclipboard("https://github.com/aldyjrz") NotifySuccess("Link GitHub", "Copied to clipboard!") end })
+DevTab:CreateButton({ Name = "Tutor Tiktok", Callback = function() setclipboard("https://tiktok.com/hyrexxyy") NotifySuccess("Link Tiktok", "Copied to clipboard!") end })
+DevTab:CreateButton({ Name = "Instagram", Callback = function() setclipboard("https://instagram.com/hyrexxyy") NotifySuccess("Link Instagram", "Copied to clipboard!") end })
+DevTab:CreateButton({ Name = "GitHub", Callback = function() setclipboard("https://github.com/hyrexxyy") NotifySuccess("Link GitHub", "Copied to clipboard!") end })
 
 -- MainTab (Auto Fish)
 MainTab:CreateParagraph({
@@ -93,7 +92,7 @@ MainTab:CreateParagraph({
 -- Section: Standard Boats
 Spawn_Boat:CreateParagraph({
     Title = "🚤 Standard Boats",
-    Content = "Spawn a standard boat with stats"
+    Content = "Spawn a boat"
 })
 
 local standard_boats = {
@@ -193,7 +192,7 @@ MainTab:CreateToggle({
 
 MainTab:CreateToggle({
     Name = "✨ Use Perfect Cast",
-    CurrentValue = true,
+    CurrentValue = false,
     Callback = function(val)
         perfectCast = val
     end
