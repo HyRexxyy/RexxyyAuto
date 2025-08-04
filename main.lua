@@ -92,7 +92,7 @@ MainTab:CreateParagraph({
 -- Section: Standard Boats
 Spawn_Boat:CreateParagraph({
     Title = "🚤 Standard Boats",
-    Content = "Spawn a standard boat with stats"
+    Content = "Spawn boat"
 })
 
 local standard_boats = {
