@@ -14,431 +14,546 @@ local replicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 if not player or not replicatedStorage then return end
 
--- Load Rayfield
-local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua"))()
+-- Load WindUi
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
 -- Window
-local Window = Rayfield:CreateWindow({
-    Name = "Fish It Script",
-    LoadingTitle = "Fish It",
-    LoadingSubtitle = "by @HyRexxyy",
-    Theme = "Amethyst",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "Rexxyy",
-        FileName = "FishIt"
-    },
+local Window = WindUI:CreateWindow({
+    Title = gradient("RexxyyAuto", Color3.fromHex("#8C46FF"), Color3.fromHex("#BE78FF")),
+    Icon = "rbxassetid://90566677928169",
+    Author = "Fish It",
+    Size = UDim2.fromOffset(500, 320),
+    Folder = "RexxyyHub",
+    Transparent = false,
+    Theme = "Arcvour",
+    ToggleKey = Enum.KeyCode.K,
+    SideBarWidth = 160,
     KeySystem = false
+    }
 })
 
 -- Tabs
+local Tabs = {
+    Farming = Window:Tab({ Title = "Farming", Icon = "fish", ShowTabTitle = true }),
+    Spawn_Boat = Window:Tab({ Title = "Spawn Boat", Icon = "ship", ShowTabTitle = true }),
+    Movement = Window:Tab({ Title = "Movement", Icon = "send", ShowTabTitle = true }),
+    Edit_Stats = Window:Tab({ Title = "Edit Stats", Icon = "file-pen", ShowTabTitle = true }),
+    Buy_Rod = Window:Tab({ Title = "Buy Rod", Icon = "anchor", ShowTabTitle = true }),
+    Buy_Weather = Window:Tab({ Title = "Buy Weather", Icon = "cloud", ShowTabTitle = true }),
+    Buy_Baits = Window:Tab({ Title = "Buy Baits", Icon = "bug", ShowTabTitle = true }),
+    TP_Islands = Window:Tab({ Title = "TP Islands", Icon = "map-pin", ShowTabTitle = true }),
+    TP_Shop = Window:Tab({ Title = "TP Shop", Icon = "shopping-cart", ShowTabTitle = true }),
+    TP_NPC = Window:Tab({ Title = "Teleport to NPC", Icon = "users", ShowTabTitle = true }),
+    TP_Player = Window:Tab({ Title = "TP Player", Icon = "user-round-search", ShowTabTitle = true })
+}
 
-local DevTab = Window:CreateTab("Developer", "airplay")
-local MainTab = Window:CreateTab("Auto Fish", "fish")
-local PlayerTab = Window:CreateTab("Player", "users-round")
-local IslandsTab = Window:CreateTab("Islands", "map")
-local SettingsTab = Window:CreateTab("Settings", "cog")
-local NPCTab = Window:CreateTab("NPC", "user")
-local EventTab = Window:CreateTab("Event", "cog")
-local Spawn_Boat = Window:CreateTab("Spawn Boat", "cog")
-local Buy_Rod = Window:CreateTab("Buy Rod", "cog")
-local Buy_Weather = Window:CreateTab("Buy Weather", "cog")
-local Buy_Baits = Window:CreateTab("Buy Bait", "cog")
-
-
--- Remotes
-local net = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net")
-local rodRemote = net:WaitForChild("RF/ChargeFishingRod")
-local miniGameRemote = net:WaitForChild("RF/RequestFishingMinigameStarted")
-local finishRemote = net:WaitForChild("RE/FishingCompleted")
-local equipRemote = net:WaitForChild("RE/EquipToolFromHotbar")
-
--- State
-local AutoSell = false
-local autofish = false
-local perfectCast = false
-local ijump = false
-local autoRecastDelay = 0.5
-local enchantPos = Vector3.new(3231, -1303, 1402)
+if not Tabs.Farming or not Tabs.Spawn_Boat or not Tabs.Movement or not Tabs.Edit_Stats or not Tabs.Buy_Rod or not Tabs.Buy_Weather or not Tabs.Buy_Baits or not Tabs.TP_Islands or not Tabs.TP_Shop or not Tabs.TP_NPC or not Tabs.TP_Player then
+    warn("Gagal membuat satu atau lebih tab.")
+    return
+end
 
 local featureState = {
-    AutoSell = false,
+    AutoFish = false,
+    AutoSellAll = false,
+    AutoSellOnEquip = false,
+    WalkSpeed = false,
+    InfiniteJump = false,
+    NoClip = false
 }
 
-local function NotifySuccess(title, message)
-	Rayfield:Notify({ Title = title, Content = message, Duration = 3, Image = "circle-check" })
-end
-
-local function NotifyError(title, message)
-	Rayfield:Notify({ Title = title, Content = message, Duration = 3, Image = "ban" })
-end
-
--- Developer Info
-DevTab:CreateParagraph({
-    Title = "HyRexxyy Script",
-    Content = "Thanks for using this script!\n\nDont forget to follow me on my social platform\nDeveloper:\n- Tiktok: tiktok.com/hyrexxyy\n- Instagram: @hyrexxyy\n- GitHub: github.com/hyrexxyy\n\nKeep supporting!"
-})
-
-DevTab:CreateButton({ Name = "Tutor Tiktok", Callback = function() setclipboard("https://tiktok.com/hyrexxyy") NotifySuccess("Link Tiktok", "Copied to clipboard!") end })
-DevTab:CreateButton({ Name = "Instagram", Callback = function() setclipboard("https://instagram.com/hyrexxyy") NotifySuccess("Link Instagram", "Copied to clipboard!") end })
-DevTab:CreateButton({ Name = "GitHub", Callback = function() setclipboard("https://github.com/hyrexxyy") NotifySuccess("Link GitHub", "Copied to clipboard!") end })
-
--- MainTab (Auto Fish)
-MainTab:CreateParagraph({
-    Title = "🎣 Auto Fish Settings",
-    Content = "Gunakan toggle & slider di bawah untuk mengatur auto fishing."
-})
-
--- Section: Standard Boats
-Spawn_Boat:CreateParagraph({
-    Title = "🚤 Standard Boats",
-    Content = "Spawn a boat"
-})
-
-local standard_boats = {
-    { Name = "Small Boat", ID = 1, Desc = "Acceleration: 160% | Passengers: 3 | Top Speed: 120%" },
-    { Name = "Kayak", ID = 2, Desc = "Acceleration: 180% | Passengers: 1 | Top Speed: 155%" },
-    { Name = "Jetski", ID = 3, Desc = "Acceleration: 240% | Passengers: 2 | Top Speed: 280%" },
-    { Name = "Highfield Boat", ID = 4, Desc = "Acceleration: 180% | Passengers: 3 | Top Speed: 180%" },
-    { Name = "Speed Boat", ID = 5, Desc = "Acceleration: 200% | Passengers: 4 | Top Speed: 220%" },
-    { Name = "Fishing Boat", ID = 6, Desc = "Acceleration: 180% | Passengers: 8 | Top Speed: 230%" },
-    { Name = "Mini Yacht", ID = 14, Desc = "Acceleration: 140% | Passengers: 10 | Top Speed: 290%" },
-    { Name = "Hyper Boat", ID = 7, Desc = "Acceleration: 240% | Passengers: 7 | Top Speed: 400%" },
-    { Name = "Frozen Boat", ID = 11, Desc = "Acceleration: 193% | Passengers: 3 | Top Speed: 230%" },
-    { Name = "Cruiser Boat", ID = 13, Desc = "Acceleration: 180% | Passengers: 4 | Top Speed: 185%" }
+local statValues = {
+    FishingLuck = nil,
+    ShinyChance = nil,
+    MutationChance = nil
 }
-
-for _, boat in ipairs(standard_boats) do
-    Spawn_Boat:CreateButton({
-        Name = "🛥️ " .. boat.Name,
-        Callback = function()
-            pcall(function()
-                replicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net["RF/DespawnBoat"]:InvokeServer()
-                task.wait(3)
-                replicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net["RF/SpawnBoat"]:InvokeServer(boat.ID)
-                Rayfield:Notify({
-                    Title = "🚤 Spawning Boat",
-                    Content = "Replacing with " .. boat.Name .. "\n" .. boat.Desc,
-                    Duration = 5,
-                    Image = 4483362458
-                })
-            end)
-        end
-    })
-end
-
--- Section: Other Boats
-Spawn_Boat:CreateParagraph({
-    Title = "🦆 Other Boats",
-    Content = "Special / event-only boats"
-})
-
-local other_boats = {
-    { Name = "Alpha Floaty", ID = 8 },
-    { Name = "DEV Evil Duck 9000", ID = 9 },
-    { Name = "Festive Duck", ID = 10 },
-    { Name = "Santa Sleigh", ID = 12 }
-}
-
-for _, boat in ipairs(other_boats) do
-    Spawn_Boat:CreateButton({
-        Name = "🛶 " .. boat.Name,
-        Callback = function()
-            pcall(function()
-                replicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net["RF/DespawnBoat"]:InvokeServer()
-                task.wait(3)
-                replicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net["RF/SpawnBoat"]:InvokeServer(boat.ID)
-                Rayfield:Notify({
-                    Title = "⛵ Spawning Boat",
-                    Content = "Replacing with " .. boat.Name,
-                    Duration = 5,
-                    Image = 4483362458
-                })
-            end)
-        end
-    })
-end
-
-
-MainTab:CreateToggle({
-    Name = "🎣 Enable Auto Fishing",
-    CurrentValue = false,
-    Callback = function(val)
-        autofish = val
-        if val then
-            task.spawn(function()
-                while autofish do
-                    pcall(function()
-                        equipRemote:FireServer(1)
-                        task.wait(0.1)
-
-                        local timestamp = perfectCast and 9999999999 or (tick() + math.random())
-                        rodRemote:InvokeServer(timestamp)
-                        task.wait(0.1)
-
-                        local x = perfectCast and -1.238 or (math.random(-1000, 1000) / 1000)
-                        local y = perfectCast and 0.969 or (math.random(0, 1000) / 1000)
-
-                        miniGameRemote:InvokeServer(x, y)
-                        task.wait(1.3)
-                        finishRemote:FireServer()
-                    end)
-                    task.wait(autoRecastDelay)
-                end
-            end)
-        end
-    end
-})
-
-MainTab:CreateToggle({
-    Name = "✨ Use Perfect Cast",
-    CurrentValue = false,
-    Callback = function(val)
-        perfectCast = val
-    end
-})
-
-MainTab:CreateSlider({
-    Name = "⏱️ Auto Recast Delay (seconds)",
-    Range = {0.5, 5},
-    Increment = 0.1,
-    CurrentValue = autoRecastDelay,
-    Callback = function(val)
-        autoRecastDelay = val
-    end
-})
--- Buy Rods
-Buy_Rod:CreateParagraph({
-    Title = "🎣 Purchase Rods",
-    Content = "Select a rod to buy using coins."
-})
-
-local rods = {
-    { Name = "Luck Rod", Price = "350 Coins", ID = 79, Desc = "Luck: 50% | Speed: 2% | Weight: 15 kg" },
-    { Name = "Carbon Rod", Price = "900 Coins", ID = 76, Desc = "Luck: 30% | Speed: 4% | Weight: 20 kg" },
-    { Name = "Grass Rod", Price = "1.50k Coins", ID = 85, Desc = "Luck: 55% | Speed: 5% | Weight: 250 kg" },
-    { Name = "Demascus Rod", Price = "3k Coins", ID = 77, Desc = "Luck: 80% | Speed: 4% | Weight: 400 kg" },
-    { Name = "Ice Rod", Price = "5k Coins", ID = 78, Desc = "Luck: 60% | Speed: 7% | Weight: 750 kg" },
-    { Name = "Lucky Rod", Price = "15k Coins", ID = 4, Desc = "Luck: 130% | Speed: 7% | Weight: 5k kg" },
-    { Name = "Midnight Rod", Price = "50k Coins", ID = 80, Desc = "Luck: 100% | Speed: 10% | Weight: 10k kg" },
-    { Name = "Steampunk Rod", Price = "215k Coins", ID = 6, Desc = "Luck: 175% | Speed: 19% | Weight: 25k kg" },
-    { Name = "Chrome Rod", Price = "437k Coins", ID = 7, Desc = "Luck: 229% | Speed: 23% | Weight: 250k kg" },
-    { Name = "Astral Rod", Price = "1M Coins", ID = 5, Desc = "Luck: 350% | Speed: 43% | Weight: 550k kg" }
-}
-
-for _, rod in ipairs(rods) do
-    Buy_Rod:CreateButton({
-        Name = rod.Name .. " (" .. rod.Price .. ")",
-        Callback = function()
-            pcall(function()
-                replicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net["RF/PurchaseFishingRod"]:InvokeServer(rod.ID)
-                Rayfield:Notify({
-                    Title = "🎣 Purchase Rod",
-                    Content = "Buying " .. rod.Name,
-                    Duration = 3
-                })
-            end)
-        end
-    })
-end
-
--- Buy Weather
-Buy_Weather:CreateParagraph({
-    Title = "🌤️ Purchase Weather Events",
-    Content = "Select a weather event to trigger."
-})
-local autoBuyWeather = false
-
-Buy_Weather:CreateToggle({
-    Name = "🌀 Auto Buy All Weather",
-    CurrentValue = false,
-    Flag = "AutoBuyWeatherToggle",
-    Callback = function(Value)
-        autoBuyWeather = Value
-        if Value then
-            Rayfield:Notify({
-                Title = "Auto Weather",
-                Content = "Started Auto Buying Weather",
-                Duration = 3
-            })
-
-            task.spawn(function()
-                while autoBuyWeather do
-                    for _, w in ipairs(weathers) do
-                        pcall(function()
-                            replicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net["RF/PurchaseWeatherEvent"]:InvokeServer(w.Name)
-                            
-                        end)
-                        task.wait(1.5) -- jeda antar pembelian
-                    end
-                    task.wait(10) -- tunggu sebelum mengulang pembelian
-                end
-            end)
-        else
-            Rayfield:Notify({
-                Title = "Auto Weather",
-                Content = "Stopped Auto Buying",
-                Duration = 2
-            })
-        end
-    end
-})
-local weathers = {
-    { Name = "Wind", Price = "10k Coins", Desc = "Increases Rod Speed" },
-    { Name = "Snow", Price = "15k Coins", Desc = "Adds Frozen Mutations" },
-    { Name = "Cloudy", Price = "20k Coins", Desc = "Increases Luck" },
-    { Name = "Storm", Price = "35k Coins", Desc = "Increase Rod Speed And Luck" },
-    { Name = "Shark Hunt", Price = "300k Coins", Desc = "Shark Hunt" }
-}
-
-for _, w in ipairs(weathers) do
-    Buy_Weather:CreateButton({
-        Name = w.Name .. " (" .. w.Price .. ")",
-        Callback = function()
-            pcall(function()
-                replicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net["RF/PurchaseWeatherEvent"]:InvokeServer(w.Name)
-                Rayfield:Notify({
-                    Title = "⛅ Weather Event",
-                    Content = "Triggering " .. w.Name,
-                    Duration = 3
-                })
-            end)
-        end
-    })
-end
-
-
-
-
--- Buy Bait
-Buy_Baits:CreateParagraph({
-    Title = "🪱 Purchase Baits",
-    Content = "Buy bait to enhance fishing luck or effects."
-})
-
-local baits = {
-    { Name = "Topwater Bait", Price = "100 Coins", ID = 10, Desc = "Luck: 8%" },
-    { Name = "Luck Bait", Price = "1k Coins", ID = 2, Desc = "Luck: 10%" },
-    { Name = "Midnight Bait", Price = "3k Coins", ID = 3, Desc = "Luck: 20%" },
-    { Name = "Chroma Bait", Price = "290k Coins", ID = 6, Desc = "Luck: 100%" },
-    { Name = "Dark Mater Bait", Price = "630k Coins", ID = 8, Desc = "Luck: 175%" },
-    { Name = "Corrupt Bait", Price = "1.15M Coins", ID = 15, Desc = "Luck: 200% | Mutation Chance: 10% | Shiny Chance: 10%" }
-}
-
-for _, bait in ipairs(baits) do
-    Buy_Baits:CreateButton({
-        Name = bait.Name .. " (" .. bait.Price .. ")",
-        Callback = function()
-            pcall(function()
-                replicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net["RF/PurchaseBait"]:InvokeServer(bait.ID)
-                Rayfield:Notify({
-                    Title = "🪱 Bait Purchase",
-                    Content = "Buying " .. bait.Name,
-                    Duration = 3
-                })
-            end)
-        end
-    })
-end
-
-local AutoSellToggle = MainTab:CreateToggle({
-    Name = "🛒 Auto Sell (Teleport ke Alex)",
-    CurrentValue = false,
-    Flag = "AutoSell",
-    Callback = function(value)
-        featureState.AutoSell = value
-        if value then
-            task.spawn(function()
-                while featureState.AutoSell and player do
-                    pcall(function()
-                        if not (player.Character and player.Character:FindFirstChild("HumanoidRootPart")) then return end
-
-                        local npcContainer = replicatedStorage:FindFirstChild("NPC")
-                        local alexNpc = npcContainer and npcContainer:FindFirstChild("Alex")
-
-                        if not alexNpc then
-                            Rayfield:Notify({
-                                Title = "❌ Error",
-                                Content = "NPC 'Alex' tidak ditemukan!",
-                                Duration = 5,
-                                Image = 4483362458
-                            })
-                            featureState.AutoSell = false
-                            AutoSellToggle:Set(false)
-                            return
-                        end
-
-                        local originalCFrame = player.Character.HumanoidRootPart.CFrame
-                        local npcPosition = alexNpc.WorldPivot.Position
-
-                        player.Character.HumanoidRootPart.CFrame = CFrame.new(npcPosition)
-                        task.wait(1)
-
-                        replicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net["RF/SellAllItems"]:InvokeServer()
-                        task.wait(1)
-
-                        player.Character.HumanoidRootPart.CFrame = originalCFrame
-                    end)
-                    task.wait(20)
-                end
-            end)
-        end
-    end
-})
-
--- Toggle logic
-local blockUpdateOxygen = false
-
-PlayerTab:CreateToggle({
-    Name = "Unlimited Oxygen",
-    CurrentValue = false,
-    Flag = "BlockUpdateOxygen",
-    Callback = function(value)
-        blockUpdateOxygen = value
-        Rayfield:Notify({
-            Title = "Update Oxygen Block",
-            Content = value and "Remote blocked!" or "Remote allowed!",
-            Duration = 3,
-        })
-    end,
-})
-
--- Hook FireServer
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
-
-    if method == "FireServer" and tostring(self) == "URE/UpdateOxygen" and blockUpdateOxygen then
-        warn("Tahan Napas Bang")
-        return nil -- prevent call
-    end
-
-    return oldNamecall(self, unpack(args))
-end))
-
--- Player Tab
-PlayerTab:CreateToggle({
-    Name = "Infinity Jump",
-    CurrentValue = false,
-    Callback = function(val)
-        ijump = val
-    end
-})
-
-
-
-UserInputService.JumpRequest:Connect(function()
-    if ijump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
-    end
-end)
 
 do
-    PlayerTab:CreateParagraph({
-        Title = "🛒 Teleport to Shops",
-        Content = "Click a button to teleport to the respective shop NPC."
+    Tabs.Farming:Section({ Title = "Auto Features" })
+    
+    local AutoSellAllToggle
+    AutoSellAllToggle = Tabs.Farming:Toggle({
+        Title = "Auto Sell All Fish",
+        Desc = "Warning: This feature will sell all fish",
+        Value = false,
+        Callback = function(value)
+            featureState.AutoSellAll = value
+            if value then
+                task.spawn(function()
+                    while featureState.AutoSellAll and player do
+                        pcall(function()
+                            if not (player.Character and player.Character:FindFirstChild("HumanoidRootPart")) then return end
+                            
+                            local npcContainer = replicatedStorage:FindFirstChild("NPC")
+                            local alexNpc = npcContainer and npcContainer:FindFirstChild("Alex")
+                            
+                            if not alexNpc then
+                                WindUI:Notify({ Title = "Error", Content = "Sell NPC 'Alex' not found.", Duration = 4, Icon = "alert-triangle" })
+                                featureState.AutoSellAll = false
+                                if AutoSellAllToggle then AutoSellAllToggle:Set(false) end
+                                return
+                            end
+
+                            local originalCFrame = player.Character.HumanoidRootPart.CFrame
+                            local npcPosition = alexNpc.WorldPivot.Position
+                            
+                            player.Character.HumanoidRootPart.CFrame = CFrame.new(npcPosition)
+                            task.wait(1)
+                            
+                            game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/SellAllItems"):InvokeServer()
+                            task.wait(1)
+                            
+                            player.Character.HumanoidRootPart.CFrame = originalCFrame
+                        end)
+                        task.wait(20)
+                    end
+                end)
+            end
+        end
     })
+
+    local netFolder = replicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net")
+    local equipItemEvent = netFolder:WaitForChild("RE/EquipItem")
+    local sellItemFunc = netFolder:WaitForChild("RF/SellItem")
+    local oldNamecall
+    
+    Tabs.Farming:Toggle({
+        Title = "Auto Sell Equipped Fish",
+        Desc = "Warning: Make sure to click the fish you want to sell",
+        Value = false,
+        Callback = function(value)
+            featureState.AutoSellOnEquip = value
+            if value then
+                if not oldNamecall then
+                    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+                        if featureState.AutoSellOnEquip and self == equipItemEvent and getnamecallmethod() == "FireServer" then
+                            local args = {...}
+                            local itemId = args[1]
+                            if type(itemId) == "string" then
+                                task.spawn(function()
+                                    task.wait()
+                                    if featureState.AutoSellOnEquip then
+                                        pcall(function()
+                                            sellItemFunc:InvokeServer(itemId)
+                                        end)
+                                    end
+                                end)
+                            end
+                        end
+                        return oldNamecall(self, ...)
+                    end)
+                end
+                WindUI:Notify({ Title = "Success", Content = "Auto Sell on Equip is now active.", Duration = 4, Icon = "check" })
+            else
+                if oldNamecall and unhookmetamethod then
+                    unhookmetamethod(game, "__namecall")
+                    oldNamecall = nil
+                end
+                WindUI:Notify({ Title = "Info", Content = "Auto Sell on Equip has been disabled.", Duration = 4, Icon = "info" })
+            end
+        end
+    })
+
+    local AutoFishToggle
+    AutoFishToggle = Tabs.Farming:Toggle({
+        Title = "Enable Auto Fish",
+        Desc = "Automatically catches fish.",
+        Value = false,
+        Callback = function(value)
+            featureState.AutoFish = value
+            
+            if value then
+                pcall(function()
+                    local args = { 1 }
+                    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RE/EquipToolFromHotbar"):FireServer(unpack(args))
+                end)
+                
+                task.wait(1)
+                
+                WindUI:Notify({ Title = "Success", Content = "Auto Fishing has started.", Duration = 5, Icon = "check" })
+                
+                task.spawn(function()
+                    while featureState.AutoFish and player do
+                        pcall(function()
+                            local chargeArgs = { 1752984487.133336 }
+                            game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/ChargeFishingRod"):InvokeServer(unpack(chargeArgs))
+                            
+                            task.wait(0.2)
+                            
+                            local minigameArgs = { -0.7499996423721313, 1 }
+                            game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/RequestFishingMinigameStarted"):InvokeServer(unpack(minigameArgs))
+                            
+                            task.wait(0.2)
+                            
+                            local completedArgs = {}
+                            game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RE/FishingCompleted"):FireServer(unpack(completedArgs))
+                        end)
+                        task.wait(0.5)
+                    end
+                end)
+            else
+                WindUI:Notify({ Title = "Info", Content = "Auto Fishing has stopped.", Duration = 5, Icon = "info" })
+            end
+        end
+    })
+end
+
+do
+    Tabs.Spawn_Boat:Section({ Title = "Standard Boats" })
+    local standard_boats = {
+        { Name = "Small Boat", ID = 1, Desc = "Acceleration: 160% | Passengers: 3 | Top Speed: 120%" },
+        { Name = "Kayak", ID = 2, Desc = "Acceleration: 180% | Passengers: 1 | Top Speed: 155%" },
+        { Name = "Jetski", ID = 3, Desc = "Acceleration: 240% | Passengers: 2 | Top Speed: 280%" },
+        { Name = "Highfield Boat", ID = 4, Desc = "Acceleration: 180% | Passengers: 3 | Top Speed: 180%" },
+        { Name = "Speed Boat", ID = 5, Desc = "Acceleration: 200% | Passengers: 4 | Top Speed: 220%" },
+        { Name = "Fishing Boat", ID = 6, Desc = "Acceleration: 180% | Passengers: 8 | Top Speed: 230%" },
+        { Name = "Mini Yacht", ID = 14, Desc = "Acceleration: 140% | Passengers: 10 | Top Speed: 290%" },
+        { Name = "Hyper Boat", ID = 7, Desc = "Acceleration: 240% | Passengers: 7 | Top Speed: 400%" },
+        { Name = "Frozen Boat", ID = 11, Desc = "Acceleration: 193% | Passengers: 3 | Top Speed: 230%" },
+        { Name = "Cruiser Boat", ID = 13, Desc = "Acceleration: 180% | Passengers: 4 | Top Speed: 185%" }
+    }
+    for _, boatData in ipairs(standard_boats) do
+        Tabs.Spawn_Boat:Button({
+            Title = boatData.Name,
+            Desc = boatData.Desc,
+            Callback = function()
+                pcall(function()
+                    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/DespawnBoat"):InvokeServer()
+                    task.wait(3)
+                    local args = { boatData.ID }
+                    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/SpawnBoat"):InvokeServer(unpack(args))
+                    WindUI:Notify({ Title = "Spawning Boat", Content = "Replacing existing boat with " .. boatData.Name, Duration = 3, Icon = "ship" })
+                end)
+            end
+        })
+    end
+
+    Tabs.Spawn_Boat:Section({ Title = "Other Boats" })
+    local other_boats = {
+        { Name = "Alpha Floaty", ID = 8 },
+        { Name = "DEV Evil Duck 9000", ID = 9 },
+        { Name = "Festive Duck", ID = 10 },
+        { Name = "Santa Sleigh", ID = 12 }
+    }
+    for _, boatData in ipairs(other_boats) do
+        Tabs.Spawn_Boat:Button({
+            Title = boatData.Name,
+            Callback = function()
+                pcall(function()
+                    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/DespawnBoat"):InvokeServer()
+                    task.wait(3)
+                    local args = { boatData.ID }
+                    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/SpawnBoat"):InvokeServer(unpack(args))
+                    WindUI:Notify({ Title = "Spawning Boat", Content = "Replacing existing boat with " .. boatData.Name, Duration = 3, Icon = "ship" })
+                end)
+            end
+        })
+    end
+end
+
+do
+    local WalkSpeedSlider
+    
+    Tabs.Movement:Section({ Title = "Movement Exploits" })
+
+    local WalkSpeedToggle
+    WalkSpeedToggle = Tabs.Movement:Toggle({
+        Title = "Enable WalkSpeed",
+        Value = false,
+        Callback = function(state)
+            featureState.WalkSpeed = state
+            if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid.WalkSpeed = state and (tonumber(WalkSpeedSlider.Value.Default) or 16) or 16
+            end
+        end
+    })
+    WalkSpeedSlider = Tabs.Movement:Slider({
+        Title = "WalkSpeed Value",
+        Value = { Min = 16, Max = 200, Default = 100 },
+        Step = 1,
+        Callback = function(value)
+            if featureState.WalkSpeed and player and player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid.WalkSpeed = tonumber(value) or 16
+            end
+        end
+    })
+
+    Tabs.Movement:Toggle({
+        Title = "Enable Infinite Jump",
+        Value = false,
+        Callback = function(v) featureState.InfiniteJump = v end
+    })
+    local UserInputService = game:GetService("UserInputService")
+    if UserInputService then
+        UserInputService.JumpRequest:Connect(function()
+            if featureState.InfiniteJump and player and player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
+    end
+
+    local NoClipToggle
+    NoClipToggle = Tabs.Movement:Toggle({
+        Title = "Enable No Clip",
+        Value = false,
+        Callback = function(state)
+            featureState.NoClip = state
+            if not state and player and player.Character then
+                for _, part in ipairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = true end
+                end
+            end
+        end
+    })
+    task.spawn(function()
+        while task.wait(0.1) do
+            if Window and Window.Destroyed then break end
+            if featureState.NoClip and player and player.Character then
+                for _, part in ipairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end
+                end
+            end
+        end
+    end)
+
+    if player then
+        player.CharacterAdded:Connect(function(character)
+            local humanoid = character:WaitForChild("Humanoid", 5)
+            if featureState.WalkSpeed and humanoid then
+                humanoid.WalkSpeed = tonumber(WalkSpeedSlider.Value.Default) or 16
+            end
+        end)
+    end
+end
+
+do
+    Tabs.Edit_Stats:Section({ Title = "Edit Visual Stats" })
+    
+    Tabs.Edit_Stats:Input({
+        Title = "Fishing Luck",
+        Placeholder = "Enter a number (e.g., 99999)",
+        Type = "Input",
+        Callback = function(value)
+            statValues.FishingLuck = tonumber(value)
+        end
+    })
+    Tabs.Edit_Stats:Button({
+        Title = "Set Fishing Luck",
+        Callback = function()
+            if statValues.FishingLuck then
+                WindUI:Notify({ Title = "Success", Content = "Fishing Luck persistence enabled.", Duration = 3, Icon = "check" })
+            else
+                WindUI:Notify({ Title = "Error", Content = "Please enter a valid number first.", Duration = 4, Icon = "alert-triangle" })
+            end
+        end
+    })
+
+    Tabs.Edit_Stats:Input({
+        Title = "Shiny Chance",
+        Placeholder = "Enter a number (e.g., 99999)",
+        Type = "Input",
+        Callback = function(value)
+            statValues.ShinyChance = tonumber(value)
+        end
+    })
+    Tabs.Edit_Stats:Button({
+        Title = "Set Shiny Chance",
+        Callback = function()
+            if statValues.ShinyChance then
+                WindUI:Notify({ Title = "Success", Content = "Shiny Chance persistence enabled.", Duration = 3, Icon = "check" })
+            else
+                WindUI:Notify({ Title = "Error", Content = "Please enter a valid number first.", Duration = 4, Icon = "alert-triangle" })
+            end
+        end
+    })
+
+    Tabs.Edit_Stats:Input({
+        Title = "Mutation Chance",
+        Placeholder = "Enter a number (e.g., 99999)",
+        Type = "Input",
+        Callback = function(value)
+            statValues.MutationChance = tonumber(value)
+        end
+    })
+    Tabs.Edit_Stats:Button({
+        Title = "Set Mutation Chance",
+        Callback = function()
+            if statValues.MutationChance then
+                WindUI:Notify({ Title = "Success", Content = "Mutation Chance persistence enabled.", Duration = 3, Icon = "check" })
+            else
+                WindUI:Notify({ Title = "Error", Content = "Please enter a valid number first.", Duration = 4, Icon = "alert-triangle" })
+            end
+        end
+    })
+
+    Tabs.Edit_Stats:Section({ Title = "Rod Modifier" })
+
+    Tabs.Edit_Stats:Button({
+        Title = "Apply Max Stats to Skinned Rod",
+        Desc = "Modifies the stats of your currently equipped skinned rod.",
+        Callback = function()
+            local backpack = player.PlayerGui:FindFirstChild("Backpack", true)
+            local backpackDisplay = backpack and backpack:FindFirstChild("Display", true)
+            
+            if not backpackDisplay then
+                WindUI:Notify({ Title = "Error", Content = "Please open your backpack first.", Duration = 4, Icon = "alert-triangle" })
+                return
+            end
+
+            local itemsFolder = replicatedStorage:FindFirstChild("Items")
+            if not itemsFolder then
+                WindUI:Notify({ Title = "Error", Content = "Items data folder not found.", Duration = 4, Icon = "alert-triangle" })
+                return
+            end
+
+            local modified = false
+            for _, tile in ipairs(backpackDisplay:GetChildren()) do
+                if tile.Name == "Tile" then
+                    local skinActiveLabel = tile:FindFirstChild("Inner", true) and tile.Inner:FindFirstChild("Tags", true) and tile.Inner.Tags:FindFirstChild("SkinActive", true)
+                    local itemNameLabel = tile:FindFirstChild("Inner", true) and tile.Inner:FindFirstChild("Tags", true) and tile.Inner.Tags:FindFirstChild("ItemName", true)
+                    
+                    if skinActiveLabel and itemNameLabel and skinActiveLabel.Text == "★ SKIN ★" then
+                        local itemName = itemNameLabel.Text
+                        local moduleName = "!!! " .. itemName
+                        
+                        local rodModule = itemsFolder:FindFirstChild(moduleName)
+                        
+                        if rodModule then
+                            local success, rodData = pcall(require, rodModule)
+                            
+                            if success and type(rodData) == "table" then
+                                rodData.VisualClickPowerPercent = 99999999
+                                rodData.MaxWeight = 99999999
+                                if rodData.RollData then
+                                    rodData.RollData.BaseLuck = 99999999
+                                end
+                                modified = true
+                                WindUI:Notify({ Title = "Modified!", Content = itemName .. " stats have been maxed.", Duration = 4, Icon = "check" })
+                            end
+                        end
+                    end
+                end
+            end
+
+            if not modified then
+                WindUI:Notify({ Title = "Info", Content = "No skinned rod found in your backpack.", Duration = 4, Icon = "info" })
+            end
+        end
+    })
+end
+
+do
+    Tabs.Buy_Rod:Section({ Title = "Purchase Rods" })
+    local rods = {
+        { Name = "Luck Rod", Price = "350 Coins", ID = 79, Desc = "Luck: 50% | Speed: 2% | Weight: 15 kg" },
+        { Name = "Carbon Rod", Price = "900 Coins", ID = 76, Desc = "Luck: 30% | Speed: 4% | Weight: 20 kg" },
+        { Name = "Grass Rod", Price = "1.50k Coins", ID = 85, Desc = "Luck: 55% | Speed: 5% | Weight: 250 kg" },
+        { Name = "Demascus Rod", Price = "3k Coins", ID = 77, Desc = "Luck: 80% | Speed: 4% | Weight: 400 kg" },
+        { Name = "Ice Rod", Price = "5k Coins", ID = 78, Desc = "Luck: 60% | Speed: 7% | Weight: 750 kg" },
+        { Name = "Lucky Rod", Price = "15k Coins", ID = 4, Desc = "Luck: 130% | Speed: 7% | Weight: 5k kg" },
+        { Name = "Midnight Rod", Price = "50k Coins", ID = 80, Desc = "Luck: 100% | Speed: 10% | Weight: 10k kg" },
+        { Name = "Steampunk Rod", Price = "215k Coins", ID = 6, Desc = "Luck: 175% | Speed: 19% | Weight: 25k kg" },
+        { Name = "Chrome Rod", Price = "437k Coins", ID = 7, Desc = "Luck: 229% | Speed: 23% | Weight: 250k kg" },
+        { Name = "Astral Rod", Price = "1M Coins", ID = 5, Desc = "Luck: 350% | Speed: 43% | Weight: 550k kg" }
+    }
+    for _, rodData in ipairs(rods) do
+        Tabs.Buy_Rod:Button({
+            Title = rodData.Name .. " (" .. rodData.Price .. ")",
+            Desc = rodData.Desc,
+            Callback = function()
+                pcall(function()
+                    local args = { rodData.ID }
+                    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/PurchaseFishingRod"):InvokeServer(unpack(args))
+                    WindUI:Notify({ Title = "Purchase Attempt", Content = "Buying " .. rodData.Name, Duration = 3, Icon = "info" })
+                end)
+            end
+        })
+    end
+end
+
+do
+    Tabs.Buy_Weather:Section({ Title = "Purchase Weather Events" })
+    local weathers = {
+        { Name = "Wind", Price = "10k Coins", Desc = "Increases Rod Speed" },
+        { Name = "Snow", Price = "15k Coins", Desc = "Adds Frozen Mutations" },
+        { Name = "Cloudy", Price = "20k Coins", Desc = "Increases Luck" },
+        { Name = "Storm", Price = "35k Coins", Desc = "Increase Rod Speed And Luck" },
+        { Name = "Shark Hunt", Price = "300k Coins", Desc = "Shark Hunt" }
+    }
+    for _, weatherData in ipairs(weathers) do
+        Tabs.Buy_Weather:Button({
+            Title = weatherData.Name .. " (" .. weatherData.Price .. ")",
+            Desc = weatherData.Desc,
+            Callback = function()
+                pcall(function()
+                    local args = { weatherData.Name }
+                    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/PurchaseWeatherEvent"):InvokeServer(unpack(args))
+                    WindUI:Notify({ Title = "Purchase Attempt", Content = "Buying " .. weatherData.Name .. " event", Duration = 3, Icon = "info" })
+                end)
+            end
+        })
+    end
+end
+
+do
+    Tabs.Buy_Baits:Section({ Title = "Purchase Baits" })
+    local baits = {
+        { Name = "Topwater Bait", Price = "100 Coins", ID = 10, Desc = "Luck: 8%" },
+        { Name = "Luck Bait", Price = "1k Coins", ID = 2, Desc = "Luck: 10%" },
+        { Name = "Midnight Bait", Price = "3k Coins", ID = 3, Desc = "Luck: 20%" },
+        { Name = "Chroma Bait", Price = "290k Coins", ID = 6, Desc = "Luck: 100%" },
+        { Name = "Dark Mater Bait", Price = "630k Coins", ID = 8, Desc = "Luck: 175%" },
+        { Name = "Corrupt Bait", Price = "1.15M Coins", ID = 15, Desc = "Luck: 200% | Mutation Chance: 10% | Shiny Chance: 10%" }
+    }
+    for _, baitData in ipairs(baits) do
+        Tabs.Buy_Baits:Button({
+            Title = baitData.Name .. " (" .. baitData.Price .. ")",
+            Desc = baitData.Desc,
+            Callback = function()
+                pcall(function()
+                    local args = { baitData.ID }
+                    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net"):WaitForChild("RF/PurchaseBait"):InvokeServer(unpack(args))
+                    WindUI:Notify({ Title = "Purchase Attempt", Content = "Buying " .. baitData.Name, Duration = 3, Icon = "info" })
+                end)
+            end
+        })
+    end
+end
+
+do
+    Tabs.TP_Islands:Section({ Title = "Island Locations" })
+    
+    local locations = {
+        "Coral Reefs", "Crater Island", "Esoteric Depths", "Kohana",
+        "Kohana Volcano", "Stingray Shores", "Tropical Grove", "Lost Isle", "Lost Shore"
+    }
+    table.sort(locations)
+    
+    for _, name in ipairs(locations) do
+        Tabs.TP_Islands:Button({
+            Title = name,
+            Callback = function()
+                if not (player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")) then
+                    WindUI:Notify({ Title = "Error", Content = "Character not found.", Duration = 4, Icon = "alert-triangle" })
+                    return
+                end
+                
+                local islandContainer = workspace:FindFirstChild("!!!! ISLAND LOCATIONS !!!!")
+                local islandPart = islandContainer and islandContainer:FindFirstChild(name)
+                
+                if islandPart then
+                    player.Character.HumanoidRootPart.CFrame = CFrame.new(islandPart.Position)
+                    WindUI:Notify({ Title = "Teleported", Content = "Successfully teleported to " .. name, Duration = 3, Icon = "check" })
+                else
+                    WindUI:Notify({ Title = "Error", Content = "Location '" .. name .. "' not found.", Duration = 4, Icon = "alert-triangle" })
+                end
+            end
+        })
+    end
+end
+
+do
+    Tabs.TP_Shop:Section({ Title = "Shop Locations" })
+
     local shop_npcs = {
         { Name = "Boats Shop", Path = "Boat Expert" },
         { Name = "Rod Shop", Path = "Joe" },
@@ -446,301 +561,217 @@ do
     }
 
     for _, npc_data in ipairs(shop_npcs) do
-        PlayerTab:CreateButton({
-            Name = npc_data.Name,
+        Tabs.TP_Shop:Button({
+            Title = npc_data.Name,
             Callback = function()
-                local npc = game:GetService("ReplicatedStorage"):FindFirstChild("NPC"):FindFirstChild(npc_data.Path)
-                local char = game:GetService("Players").LocalPlayer.Character
-                if npc and char and char:FindFirstChild("HumanoidRootPart") then
-                    char:PivotTo(npc:GetPivot())
-                    Rayfield:Notify({
-                        Title = "Teleported",
-                        Content = "To " .. npc_data.Name,
-                        Duration = 3,
-                        Image = 4483362458
-                    })
+                if not (player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")) then
+                    WindUI:Notify({ Title = "Error", Content = "Character not found.", Duration = 4, Icon = "alert-triangle" })
+                    return
+                end
+
+                local npcContainer = replicatedStorage:FindFirstChild("NPC")
+                local npc_model = npcContainer and npcContainer:FindFirstChild(npc_data.Path)
+
+                if npc_model and npc_model:IsA("Model") and npc_model.WorldPivot then
+                    player.Character.HumanoidRootPart.CFrame = CFrame.new(npc_model.WorldPivot.Position)
+                    WindUI:Notify({ Title = "Teleported", Content = "Successfully teleported to " .. npc_data.Name, Duration = 3, Icon = "check" })
                 else
-                    Rayfield:Notify({
-                        Title = "Error",
-                        Content = "NPC or Character not found.",
-                        Duration = 3,
-                        Image = 4483362458
-                    })
+                    WindUI:Notify({ Title = "Error", Content = "NPC for '" .. npc_data.Name .. "' not found.", Duration = 4, Icon = "alert-triangle" })
                 end
-            end,
+            end
         })
     end
 
-    PlayerTab:CreateButton({
-        Name = "Weather Machine",
+    Tabs.TP_Shop:Button({
+        Title = "Weather Machine",
         Callback = function()
-            local weather = workspace:FindFirstChild("!!!! ISLAND LOCATIONS !!!!"):FindFirstChild("Weather Machine")
-            local char = game:GetService("Players").LocalPlayer.Character
-            if weather and char and char:FindFirstChild("HumanoidRootPart") then
-                char:PivotTo(CFrame.new(weather.Position))
-                Rayfield:Notify({
-                    Title = "Teleported",
-                    Content = "To Weather Machine",
-                    Duration = 3,
-                    Image = 4483362458
-                })
-            else
-                Rayfield:Notify({
-                    Title = "Error",
-                    Content = "Weather Machine or Character not found.",
-                    Duration = 3,
-                    Image = 4483362458
-                })
+            if not (player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")) then
+                WindUI:Notify({ Title = "Error", Content = "Character not found.", Duration = 4, Icon = "alert-triangle" })
+                return
             end
-        end,
-    })
-end
-
-
-
-PlayerTab:CreateSlider({
-    Name = "WalkSpeed",
-    Range = {16, 150},
-    Increment = 1,
-    CurrentValue = 16,
-    Callback = function(val)
-        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = val end
-    end
-})
-
-PlayerTab:CreateSlider({
-    Name = "Jump Power",
-    Range = {50, 500},
-    Increment = 10,
-    CurrentValue = 35,
-    Callback = function(val)
-        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum.UseJumpPower = true
-            hum.JumpPower = val
-        end
-    end
-})
-
--- Islands Tab
-local islandCoords = {
-    ["01"] = { name = "Weather Machine", position = Vector3.new(-1471, -3, 1929) },
-    ["02"] = { name = "Esoteric Depths", position = Vector3.new(3157, -1303, 1439) },
-    ["03"] = { name = "Tropical Grove", position = Vector3.new(-2038, 3, 3650) },
-    ["04"] = { name = "Stingray Shores", position = Vector3.new(-32, 4, 2773) },
-    ["05"] = { name = "Kohana Volcano", position = Vector3.new(-519, 24, 189) },
-    ["06"] = { name = "Coral Reefs", position = Vector3.new(-3095, 1, 2177) },
-    ["07"] = { name = "Crater Island", position = Vector3.new(968, 1, 4854) },
-    ["08"] = { name = "Kohana", position = Vector3.new(-658, 3, 719) },
-    ["09"] = { name = "Winter Fest", position = Vector3.new(1611, 4, 3280) },
-    ["10"] = { name = "Isoteric Island", position = Vector3.new(1987, 4, 1400) },
-["11"] = { name = "Lost Isle", position = Vector3.new(-3670.30078125, -113.00000762939453, -1128.0589599609375)},
-["12"] = { name = "Lost Isle [Lost Shore]", position = Vector3.new(-3697, 97, -932)},
-["13"] = { name = "Lost Isle [Sisyphus]", position = Vector3.new(-3719.850830078125, -113.00000762939453, -958.6303100585938)},
-
-["14"] = { name = "Lost Isle [Treasure Hall]", position = Vector3.new(-3652, -298.25, -1469)},
-["15"] = { name = "Lost Isle [Treasure Room]", position = Vector3.new(-3652, -283.5, -1651.5)}
-}
-
-for _, data in pairs(islandCoords) do
-    IslandsTab:CreateButton({
-        Name = data.name,
-        Callback = function()
-            local char = Workspace.Characters:FindFirstChild(LocalPlayer.Name)
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                hrp.CFrame = CFrame.new(data.position + Vector3.new(0, 5, 0))
-                NotifySuccess("Teleported!", "You are now at " .. data.name)
+            
+            local islandContainer = workspace:FindFirstChild("!!!! ISLAND LOCATIONS !!!!")
+            local islandPart = islandContainer and islandContainer:FindFirstChild("Weather Machine")
+            
+            if islandPart then
+                player.Character.HumanoidRootPart.CFrame = CFrame.new(islandPart.Position)
+                WindUI:Notify({ Title = "Teleported", Content = "Successfully teleported to Weather Machine", Duration = 3, Icon = "check" })
             else
-                NotifyError("Teleport Failed", "Character or HRP not found!")
+                WindUI:Notify({ Title = "Error", Content = "Location 'Weather Machine' not found.", Duration = 4, Icon = "alert-triangle" })
             end
         end
     })
-end 
--- NPC Tab
-local npcFolder = ReplicatedStorage:WaitForChild("NPC")
-for _, npc in ipairs(npcFolder:GetChildren()) do
-	NPCTab:CreateButton({
-		Name = "Teleport to NPC: " .. npc.Name,
-		Callback = function()
-			local npcCandidates = Workspace:GetDescendants()
-			for _, descendant in ipairs(npcCandidates) do
-				if descendant.Name == npc.Name and descendant:FindFirstChild("HumanoidRootPart") then
-					local myChar = LocalPlayer.Character
-					local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-					if myHRP then
-						myHRP.CFrame = descendant.HumanoidRootPart.CFrame + Vector3.new(0, 5, 0)
-						NotifySuccess("Teleport Success", "You teleported to NPC: " .. npc.Name)
-						return
-					end
-				end
-			end
-			NotifyError("Teleport Failed", "NPC not found in Workspace!")
-		end
-	})
 end
 
--- Settings Tab
-SettingsTab:CreateButton({ Name = "Rejoin Server", Callback = function() TeleportService:Teleport(game.PlaceId, LocalPlayer) end })
-SettingsTab:CreateButton({ Name = "Server Hop (New Server)", Callback = function()
-    local placeId = game.PlaceId
-    local servers, cursor = {}, ""
-    repeat
-        local url = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100" .. (cursor ~= "" and "&cursor=" .. cursor or "")
-        local success, result = pcall(function()
-            return HttpService:JSONDecode(game:HttpGet(url))
-        end)
-        if success and result and result.data then
-            for _, server in pairs(result.data) do
-                if server.playing < server.maxPlayers and server.id ~= game.JobId then
-                    table.insert(servers, server.id)
+do
+    Tabs.TP_NPC:Section({ Title = "NPC Locations" })
+    local npc_names = {
+        "Alex", "Billy Bob", "Boat Expert", "Burt", "Esoteric Gatekeeper", "Jed", 
+        "Jeffery", "Jess", "Joe", "Jones", "Lava Fisherman", "Lonely Fisherman", 
+        "McBoatson", "Ram", "Sam", "Santa", "Scientist", "Scott", "Seth", 
+        "Silly Fisherman", "Spokesperson", "Tim"
+    }
+    table.sort(npc_names)
+
+    for _, npc_name in ipairs(npc_names) do
+        Tabs.TP_NPC:Button({
+            Title = npc_name,
+            Callback = function()
+                if not (player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")) then
+                    WindUI:Notify({ Title = "Error", Content = "Character not found.", Duration = 4, Icon = "alert-triangle" })
+                    return
+                end
+
+                local npcContainer = replicatedStorage:FindFirstChild("NPC")
+                local npc_model = npcContainer and npcContainer:FindFirstChild(npc_name)
+
+                if npc_model and npc_model:IsA("Model") and npc_model.WorldPivot then
+                    player.Character.HumanoidRootPart.CFrame = CFrame.new(npc_model.WorldPivot.Position)
+                    WindUI:Notify({ Title = "Teleported", Content = "Successfully teleported to " .. npc_name, Duration = 3, Icon = "check" })
+                else
+                    WindUI:Notify({ Title = "Error", Content = "NPC '" .. npc_name .. "' not found.", Duration = 4, Icon = "alert-triangle" })
                 end
             end
-            cursor = result.nextPageCursor or ""
-        else
-            break
-        end
-    until not cursor or #servers > 0
-
-    if #servers > 0 then
-        local targetServer = servers[math.random(1, #servers)]
-        TeleportService:TeleportToPlaceInstance(placeId, targetServer, LocalPlayer)
-    else
-        NotifyError("Server Hop Failed", "No available servers found!")
-    end
-end })
-SettingsTab:CreateButton({ Name = "Unload Script", Callback = function()
-    Rayfield:Notify({ Title = "Script Unloaded", Content = "The script will now unload.", Duration = 3, Image = "circle-check" })
-    wait(3)
-    game:GetService("CoreGui").Rayfield:Destroy()
-end })
-
--- 🔄 Ambil semua anak dari workspace.Props dan filter hanya yang berupa Model atau BasePart
-
-local function createEventButtons()
-    EventTab.Flags = {} -- Bersihkan flags lama agar tidak dobel
-    local props = Workspace:FindFirstChild("Props")
-    if props then
-        for _, child in pairs(props:GetChildren()) do
-            if child:IsA("Model") or child:IsA("BasePart") then
-                local eventName = child.Name
-
-                EventTab:CreateButton({
-                    Name = "Teleport to: " .. eventName,
-                    Callback = function()
-                        local character = Workspace.Characters:FindFirstChild(LocalPlayer.Name)
-                        local hrp = character and character:FindFirstChild("HumanoidRootPart")
-                        local pos = nil
-
-                        if child:IsA("Model") then
-                            if child.PrimaryPart then
-                                pos = child.PrimaryPart.Position
-                            else
-                                local part = child:FindFirstChildWhichIsA("BasePart")
-                                if part then
-                                    pos = part.Position
-                                end
-                            end
-                        elseif child:IsA("BasePart") then
-                            pos = child.Position
-                        end
-
-                        if pos and hrp then
-                            hrp.CFrame = CFrame.new(pos + Vector3.new(0, 5, 0)) -- Naik dikit biar gak stuck
-                            Rayfield:Notify({
-                                Title = "✅ Teleported",
-                                Content = "You have been teleported to: " .. eventName,
-                                Duration = 4
-                            })
-                        else
-                            Rayfield:Notify({
-                                Title = "❌ Teleport Failed",
-                                Content = "Failed to locate valid part for: " .. eventName,
-                                Duration = 4
-                            })
-                        end
-                    end
-                })
-            end
-        end
+        })
     end
 end
 
--- Tombol untuk refresh list event
-EventTab:CreateButton({
-    Name = "🔄 Refresh Event List",
-    Callback = function()
-        createEventButtons()
-        Rayfield:Notify({
-            Title = "✅ Refreshed",
-            Content = "Event list has been refreshed.",
-            Duration = 3
-        })
+do
+    Tabs.TP_Player:Section({ Title = "Teleport to Player" })
+
+    local selectedPlayerName = nil
+    local playerDropdown
+    
+    local function getPlayerList()
+        local playerList = {}
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player then
+                table.insert(playerList, p.Name)
+            end
+        end
+        table.sort(playerList)
+        return playerList
     end
-})
 
--- Panggil pertama kali saat tab dibuka
-createEventButtons()
+    playerDropdown = Tabs.TP_Player:Dropdown({
+        Title = "Select Player",
+        Values = getPlayerList(),
+        AllowNone = true,
+        Callback = function(value)
+            selectedPlayerName = value
+        end
+    })
 
-local props = Workspace:FindFirstChild("Props")
-if props then
-    for _, child in pairs(props:GetChildren()) do
-        if child:IsA("Model") or child:IsA("BasePart") then
-            local eventName = child.Name
+    Tabs.TP_Player:Button({
+        Title = "Teleport to Selected Player",
+        Callback = function()
+            pcall(function()
+                if not selectedPlayerName then
+                    WindUI:Notify({ Title = "Error", Content = "No player selected.", Duration = 4, Icon = "alert-triangle" })
+                    return
+                end
+                
+                if not (player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")) then
+                    WindUI:Notify({ Title = "Error", Content = "Your character was not found.", Duration = 4, Icon = "alert-triangle" })
+                    return
+                end
 
-            EventTab:CreateButton({
-                Name = "Teleport to: " .. eventName,
-                Callback = function()
-                    local character = Workspace.Characters:FindFirstChild(LocalPlayer.Name)
-                    local hrp = character and character:FindFirstChild("HumanoidRootPart")
-                    local pos = nil
+                local charactersFolder = workspace:FindFirstChild("Characters")
+                if not charactersFolder then
+                    WindUI:Notify({ Title = "Error", Content = "'Characters' folder not found in workspace.", Duration = 4, Icon = "alert-triangle" })
+                    return
+                end
 
-                    if child:IsA("Model") then
-                        if child.PrimaryPart then
-                            pos = child.PrimaryPart.Position
-                        else
-                            local part = child:FindFirstChildWhichIsA("BasePart")
-                            if part then
-                                pos = part.Position
-                            end
-                        end
-                    elseif child:IsA("BasePart") then
-                        pos = child.Position
-                    end
+                local targetCharacter = charactersFolder:FindFirstChild(selectedPlayerName)
+                
+                if targetCharacter and targetCharacter:FindFirstChild("HumanoidRootPart") then
+                    player.Character.HumanoidRootPart.CFrame = targetCharacter.HumanoidRootPart.CFrame
+                    WindUI:Notify({ Title = "Teleported", Content = "Successfully teleported to " .. selectedPlayerName, Duration = 3, Icon = "check" })
+                else
+                    WindUI:Notify({ Title = "Error", Content = "Could not find character for " .. selectedPlayerName, Duration = 4, Icon = "alert-triangle" })
+                end
+            end)
+        end
+    })
 
-                    if pos and hrp then
-                        hrp.CFrame = CFrame.new(pos + Vector3.new(0, 5, 0)) -- Naik dikit biar gak stuck
-                        Rayfield:Notify({
-                            Title = "✅ Teleported",
-                            Content = "You have been teleported to: " .. eventName,
-                            Duration = 4
-                        })
+    local function refreshPlayerList()
+        if playerDropdown and not playerDropdown.Opened then
+            local newList = getPlayerList()
+            local currentValue = playerDropdown.Value
+            playerDropdown:Refresh(newList)
+
+            if table.find(newList, currentValue) then
+                playerDropdown:Select(currentValue)
+            else
+                selectedPlayerName = nil
+                playerDropdown:Select(nil)
+            end
+        end
+    end
+
+    Players.PlayerAdded:Connect(refreshPlayerList)
+    Players.PlayerRemoving:Connect(refreshPlayerList)
+end
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if Window and Window.Destroyed then break end
+
+        pcall(function()
+            if not player or not player.PlayerGui then return end
+            
+            local function findAndSetStat(statName, statValue, formatString, prefix)
+                if statValue then
+                    local settingsGui = player.PlayerGui:FindFirstChild("Settings")
+                    if not settingsGui then return end
+                    local statTile = settingsGui:FindFirstChild("StatTile", true)
+                    if not statTile then return end
+
+                    local labelToUpdate
+                    if statName == "Fishing Luck" then
+                         local statFrame = statTile:FindFirstChild("Stat")
+                         if statFrame and statFrame:FindFirstChild("Label") then
+                            labelToUpdate = statFrame.Label
+                         end
                     else
-                        Rayfield:Notify({
-                            Title = "❌ Teleport Failed",
-                            Content = "Failed to locate valid part for: " .. eventName,
-                            Duration = 4
-                        })
+                        for _, child in ipairs(statTile:GetChildren()) do
+                            if child:IsA("Frame") and child:FindFirstChild("Label") and child.Label.Text:find(statName) then
+                                labelToUpdate = child.Label
+                                break
+                            end
+                        end
+                    end
+                    
+                    if labelToUpdate then
+                        local newText = string.format(formatString, prefix or "", statValue)
+                        if labelToUpdate.Text ~= newText then
+                            labelToUpdate.Text = newText
+                        end
                     end
                 end
-            })
-        end
+            end
+
+            findAndSetStat("Fishing Luck", statValues.FishingLuck, "%sFishing Luck: +%s%%", "")
+            findAndSetStat("Shiny Chance", statValues.ShinyChance, "%sShiny Chance: %s%%", "")
+            findAndSetStat("Mutation Chance", statValues.MutationChance, "%sMutation Chance: +%s%%", "")
+        end)
     end
-else
-    Rayfield:Notify({
-        Title = "Reloading Props Event",
-        Content = "workspace.Props tidak ditemukan!",
-        Duration = 1
+end)
+
+local VirtualUser = game:GetService("VirtualUser")
+if player and VirtualUser then
+    player.Idled:Connect(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end)
+end
+
+if Window then
+    Window:SelectTab(1)
+    WindUI:Notify({
+        Title = "RexxyyHub Script Ready",
+        Content = "All features have been loaded for Fish It.",
+        Duration = 8,
+        Icon = "check-circle"
     })
 end
-
--- Mengubah semua modifier fishing rod menjadi 99999
-local Modifiers = require(game:GetService("ReplicatedStorage").Shared.FishingRodModifiers)
-for key in pairs(Modifiers) do
-    Modifiers[key] = 999999999
-end
-
--- Memaksa efek "Luck Bait"
-local bait = require(game:GetService("ReplicatedStorage").Baits["Luck Bait"])
-bait.Luck = 999999999
